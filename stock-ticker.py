@@ -5,6 +5,7 @@ import os
 import pandas
 import sys
 import time
+from sentiment import get_sentiment
 
 minutes_between_updates = 5
 
@@ -44,7 +45,8 @@ keys_dict = {
     'fiftyDayAverageChangePercent': 'MA50%',
     'twoHundredDayAverageChangePercent': 'MA200%',
     'regularMarketTime': 'TIME',
-    'fullExchangeName': 'EXCHANGE'
+    'fullExchangeName': 'EXCHANGE',
+    'sentimentScore': 'SENTIMENT'
 }
 
 
@@ -73,6 +75,8 @@ def get_all_stocks(symbols):
     stocks = []
     for symbol in symbols:
         stock_info = _get_stock_info(symbol)
+        sentiment= get_sentiment(symbol).iloc[0,-1]
+        stock_info['sentimentScore']= sentiment
         # Filter python objects with list comprehensions
         filtered_d = dict((v, stock_info[k]) for k, v in keys_dict.items())
         stocks.append(filtered_d)
@@ -85,7 +89,9 @@ def _get_stock_info(symbol):
     cmd = library + link + symbol
     output_string = _run_terminal_cmd(cmd)
     stock_info = json.loads(output_string)
-    return stock_info['quoteResponse']['result'][0]
+    basic_info= stock_info['quoteResponse']['result'][0]
+    
+    return basic_info
 
 
 def _run_terminal_cmd(cmd):
@@ -121,6 +127,7 @@ def build_dataframe(stocks):
     df['MA200'] = df['MA200'].apply(_color_white)
     df['TIME'] = df['TIME'].apply(_color_yellow)
     df['EXCHANGE'] = df['EXCHANGE'].apply(_color_yellow)
+    df['SENTIMENT'] = df['SENTIMENT'].apply(_color_red_green)
 
     colored_headers = dict((v, _color_yellow(v)) for v in keys_dict.values())
     df = df.rename(columns=colored_headers)
