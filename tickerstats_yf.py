@@ -6,6 +6,8 @@ import pandas
 import sys
 import time
 from sentiment import get_sentiment
+import warnings
+warnings.filterwarnings("ignore")
 
 minutes_between_updates = 5
 
@@ -14,8 +16,8 @@ indices_dict = {
     '^DJI': 'DOW 30',
     '^IXIC': 'NASDAQ',
     '^GDAXI': 'DAX',
-    '^FTSE': 'FTSE 100',
-    '^STOXX50E': 'EURO STOXX 50',
+    # '^FTSE': 'FTSE 100',
+    # '^STOXX50E': 'EURO STOXX 50',
 }
 
 currency_dict = {
@@ -46,7 +48,7 @@ keys_dict = {
     'twoHundredDayAverageChangePercent': 'MA200%',
     'regularMarketTime': 'TIME',
     'fullExchangeName': 'EXCHANGE',
-    'sentimentScore': 'SENTIMENT'
+    # 'sentimentScore': 'SENTIMENT'
 }
 
 
@@ -75,8 +77,8 @@ def get_all_stocks(symbols):
     stocks = []
     for symbol in symbols:
         stock_info = _get_stock_info(symbol)
-        sentiment= get_sentiment(symbol).iloc[0,-1]
-        stock_info['sentimentScore']= sentiment
+        # sentiment= get_sentiment(symbol).iloc[0,-1]
+        # stock_info['sentimentScore']= sentiment
         # Filter python objects with list comprehensions
         filtered_d = dict((v, stock_info[k]) for k, v in keys_dict.items())
         stocks.append(filtered_d)
@@ -127,13 +129,46 @@ def build_dataframe(stocks):
     df['MA200'] = df['MA200'].apply(_color_white)
     df['TIME'] = df['TIME'].apply(_color_yellow)
     df['EXCHANGE'] = df['EXCHANGE'].apply(_color_yellow)
-    df['SENTIMENT'] = df['SENTIMENT'].apply(_color_red_green)
+    # df['SENTIMENT'] = df['SENTIMENT'].apply(_color_red_green)
 
     colored_headers = dict((v, _color_yellow(v)) for v in keys_dict.values())
     df = df.rename(columns=colored_headers)
 
-    return df.to_string(index=False)
+    return df.to_string()
 
+def build_df(stocks):
+    df = pandas.DataFrame(stocks)
+    # Converts epoch into readable time
+    df['TIME'] = pandas.to_datetime(df['TIME'], unit='s')
+    df['TIME'] = df['TIME'].dt.time
+
+    # Styles negative and positive values with red or green
+    df['CHANGE%'] = (df['CHANGE%'].astype(float)).round(2)
+    df['LOW52%'] = df['LOW52%'].astype(float).round(2)
+    df['HIGH52%'] = df['HIGH52%'].astype(float).round(2)
+    df['MA50%'] = df['MA50%'].astype(float).round(2)
+    df['MA200%'] = df['MA200%'].astype(float).round(2)
+
+    # Adds ansi codes to the rest to offset the TextAdjustment from pandas
+    # or: https://github.com/pandas-dev/pandas/issues/18066#issuecomment-522192922
+    df['SYMBOL'] = df['SYMBOL']
+    df['NAME'] = df['NAME']
+    df['CUR'] = df['CUR']
+    df['PRICE'] = df['PRICE'].round(2)
+    df['LOW'] = df['LOW'].round(2)
+    df['HIGH'] = df['HIGH'].round(2)
+    df['LOW52'] = df['LOW52'].round(2)
+    df['HIGH52'] = df['HIGH52'].round(2)
+    df['MA50'] = df['MA50'].round(2)
+    df['MA200'] = df['MA200'].round(2)
+    df['TIME'] = df['TIME']
+    df['EXCHANGE'] = df['EXCHANGE']
+    # df['SENTIMENT'] = df['SENTIMENT'].apply(_color_red_green)
+
+    # colored_headers = dict((v, _color_yellow(v)) for v in keys_dict.values())
+    # df = df.rename(columns=colored_headers)
+
+    return df
 
 def _color_red_green(val):
     if val >= 0:

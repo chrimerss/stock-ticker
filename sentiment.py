@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import nltk
 # nltk.downloader.download('vader_lexicon')
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import warnings
+warnings.filterwarnings("ignore")
 
 finwiz_url = 'https://finviz.com/quote.ashx?t='
 vader= SentimentIntensityAnalyzer()
